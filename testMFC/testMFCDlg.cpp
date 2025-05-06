@@ -358,7 +358,7 @@ void CtestMFCDlg::OnPaint()
 {
 	CPaintDC dc(this); // 그리기를 위한 디바이스 컨텍스트입니다.
 
-	// 대화 상자에 최소화 단추를 추가할 경우...
+	// 이미지 그리기
 	if (!m_image.IsNull())
 	{
 		// 이미지 영역 (대화 상자 클라이언트 좌표)
@@ -366,15 +366,13 @@ void CtestMFCDlg::OnPaint()
 		// 이미지 소스 영역 (CImage 객체의 전체 크기)
 		CRect srcRect(0, 0, m_image.GetWidth(), m_image.GetHeight());
 
-		// BitBlt 또는 StretchBlt 대신 CImage::Draw 사용
+		// 이미지 그리기
 		m_image.Draw(dc.GetSafeHdc(), destRect, srcRect);
 	}
 
-
+	// 점들 그리기
 	for (const auto& p : m_points) {
-		COLORREF dotColor = RGB(0, 0, 0); // 기본 검정색
-
-		CBrush brush(dotColor);
+		CBrush brush(RGB(0, 0, 0)); // 기본 검정색
 		CBrush* pOldBrush = dc.SelectObject(&brush);
 		int dotSize = 10; // 점의 반지름
 		dc.Ellipse(p.position.x - dotSize, p.position.y - dotSize, p.position.x + dotSize, p.position.y + dotSize);
@@ -404,7 +402,7 @@ void CtestMFCDlg::OnBnClickedOk()
 		m_circleCenter = CPoint(0, 0);
 		m_circleRadius = 0;
 		ClearImage();
-		Invalidate();
+		InvalidateRect(m_imageRect, FALSE);
 		return;
 	}
 
@@ -414,7 +412,7 @@ void CtestMFCDlg::OnBnClickedOk()
 	m_circleCenter = CPoint(0, 0);
 	m_circleRadius = 0;
 	ClearImage();
-	Invalidate();
+	InvalidateRect(m_imageRect, FALSE);
 }
 
 void CtestMFCDlg::OnBnClickedRandombutton()
@@ -428,7 +426,6 @@ void CtestMFCDlg::OnBnClickedRandombutton()
 	m_points.clear();
 	ClearImage();
 	InvalidateRect(m_imageRect, FALSE);
-	UpdateWindow();
 
 	// Start the random thread
 	m_isRandomThreadRunning = true;
@@ -457,7 +454,6 @@ LRESULT CtestMFCDlg::OnThreadUpdate(WPARAM wParam, LPARAM lParam)
 	// This function is called in the main thread
 	if (m_isRandomThreadRunning) {
 		InvalidateRect(m_imageRect, FALSE);
-		UpdateWindow();
 	}
 	return 0;
 }
@@ -477,16 +473,16 @@ void CtestMFCDlg::RandomThreadFunction()
 				// Generate 3 random points
 				for (int j = 0; j < 3; j++) {
 					CPoint randomPos = GenerateRandomPoint();
-					m_points.push_back(Point(randomPos));
+					// 이미지 좌표계에서 클라이언트 좌표계로 변환
+					CPoint clientPos(
+						randomPos.x + m_imageRect.left,
+						randomPos.y + m_imageRect.top
+					);
+					m_points.push_back(Point(clientPos));
 				}
 
 				// Calculate and draw circle
-				CPoint center;
-				int radius;
-				if (CalculateCircumcircle(m_points[0].position, 
-										m_points[1].position, 
-										m_points[2].position, 
-										center, radius)) {
+				if (m_points.size() == 3) {
 					// Clear and draw new points and circle
 					ClearImage();
 					DrawCircleOnImage();
@@ -554,7 +550,7 @@ EndLButtonDown:
 		DrawCircleOnImage();
 	}
 
-	Invalidate();
+	InvalidateRect(m_imageRect, FALSE);
 	CDialogEx::OnLButtonDown(nFlags, point);
 }
 
@@ -575,7 +571,7 @@ void CtestMFCDlg::OnMouseMove(UINT nFlags, CPoint point)
 			if (m_points.size() == 3) {
 				DrawCircleOnImage();
 			}
-			Invalidate();
+			InvalidateRect(m_imageRect, FALSE);
 		}
 		CDialogEx::OnMouseMove(nFlags, point);
 		return;
@@ -589,7 +585,7 @@ void CtestMFCDlg::OnMouseMove(UINT nFlags, CPoint point)
 		if (m_points.size() == 3) {
 			DrawCircleOnImage();
 		}
-		Invalidate();
+		InvalidateRect(m_imageRect, FALSE);
 	}
 	CDialogEx::OnMouseMove(nFlags, point);
 }
@@ -609,7 +605,7 @@ void CtestMFCDlg::OnLButtonUp(UINT nFlags, CPoint point)
 		if (m_points.size() == 3) {
 			DrawCircleOnImage();
 		}
-		Invalidate();
+		InvalidateRect(m_imageRect, FALSE);
 	}
 
 	CDialogEx::OnLButtonUp(nFlags, point);
