@@ -461,8 +461,8 @@ LRESULT CtestMFCDlg::OnThreadUpdate(WPARAM wParam, LPARAM lParam)
 void CtestMFCDlg::RandomThreadFunction()
 {
 	try {
-		// Run for 5 iterations
-		for (int i = 0; i < 5 && m_isRandomThreadRunning; i++) {
+		// 초당 2번, 5초 동안 총 10번 반복
+		for (int i = 0; i < 10 && m_isRandomThreadRunning; i++) {
 			{
 				// Lock mutex before accessing shared resources
 				std::lock_guard<std::mutex> lock(m_mutex);
@@ -494,10 +494,8 @@ void CtestMFCDlg::RandomThreadFunction()
 				PostMessage(WM_USER + 1, 0, 0);
 			}
 
-			// Wait for 2 seconds
-			for (int j = 0; j < 20 && m_isRandomThreadRunning; j++) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(100));
-			}
+			// 초당 2번이므로 500밀리초(0.5초) 대기
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 	}
 	catch (...) {
